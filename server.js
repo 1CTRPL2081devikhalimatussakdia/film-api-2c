@@ -155,6 +155,89 @@ app.delete('/movies/:id', [authenticateToken, authorizeRole('admin')], async (re
 });
 
 // === DIRECTOR ROUTES (TUGAS PRAKTIKUM) ===
+
+// === DIRECTOR ROUTES ===
+
+// GET ALL DIRECTORS
+app.get('/directors', async (req, res, next) => {
+  try {
+    const result = await db.query('SELECT * FROM directors ORDER BY id ASC');
+    res.json(result.rows);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET DIRECTOR BY ID
+app.get('/directors/:id', async (req, res, next) => {
+  try {
+    const result = await db.query('SELECT * FROM directors WHERE id = $1', [req.params.id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Director tidak ditemukan' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// CREATE DIRECTOR
+app.post('/directors', authenticateToken, async (req, res, next) => {
+  const { name, birthYear } = req.body;
+
+  if (!name || !birthYear) {
+    return res.status(400).json({ error: 'name dan birthYear wajib diisi' });
+  }
+
+  try {
+    const result = await db.query(
+      'INSERT INTO directors (name, birthYear) VALUES ($1, $2) RETURNING *',
+      [name, birthYear]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// UPDATE DIRECTOR
+app.put('/directors/:id', authenticateToken, async (req, res, next) => {
+  const { name, birthYear } = req.body;
+
+  try {
+    const result = await db.query(
+      'UPDATE directors SET name = $1, birthYear = $2 WHERE id = $3 RETURNING *',
+      [name, birthYear, req.params.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Director tidak ditemukan' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE DIRECTOR
+app.delete('/directors/:id', authenticateToken, async (req, res, next) => {
+  try {
+    const result = await db.query(
+      'DELETE FROM directors WHERE id = $1 RETURNING *',
+      [req.params.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Director tidak ditemukan' });
+    }
+
+    res.json({ message: 'Director berhasil dihapus' });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // (Mahasiswa harus me-refactor endpoint /directors dengan pola yang sama)
 
 // === FALLBACK & ERROR HANDLING ===
